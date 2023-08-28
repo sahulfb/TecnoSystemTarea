@@ -12,17 +12,29 @@ class RolesController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+
+    public function asignar(Request $request)
     {
-        if (Auth::guard('sanctum')->user()) {
-            $response = response()->json(['roles' => Role::all()]);
-        } else {
-            $response = response()->json([
-                'message' => 'Unauthorized'
-            ], 401);
+        $request->validate([
+            'role_id' => 'required|exists:roles,id',
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $rol = Role::findOrFail($request->role_id);
+        $user = User::findOrFail($request->user_id);
+
+        if (!$user->hasRole($rol->name)) {
+            $user->addRole($rol);
         }
 
-        return $response;
+        return response()->json([
+            'message' => 'Rol asignado'
+        ]);
+    }
+
+    public function index()
+    {
+        return  response()->json(['roles' => Role::all()]);
     }
 
     /**
@@ -30,74 +42,50 @@ class RolesController extends Controller
      */
     public function store(Request $request)
     {
-        if (Auth::guard('sanctum')->user()) {
-            //crear rol
-            $admin = Role::create([
-                'name' => $request->name,
-                'display_name' => $request->display_name,
-                'description' => $request->description
-            ]);
+        $request->validate([
+            'name' => 'required|unique:roles,name',
+            'display_name' => 'required',
+            'description' => 'required'
+        ]);
 
-            $response = response()->json([
-                'message' => 'Rol creado'
-            ]);
-        } else {
-            $response = response()->json([
-                'message' => 'Unauthorized'
-            ], 401);
-        }
+        //crear rol
+        $admin = Role::create([
+            'name' => $request->name,
+            'display_name' => $request->display_name,
+            'description' => $request->description
+        ]);
 
-        return $response;
+        return response()->json([
+            'message' => 'Rol creado'
+        ]);
     }
 
     /**
      * Display the specified resource.
      */
-    public function asignar(int $rol, int $user)
-    {
-        $rol = Role::find($rol);
-        $user = User::find($user);
-        if ($rol && $user) {
-            $user->addRole($rol);
-            $response = response()->json([
-                'message' => 'Rol asignado'
-            ]);
-        } else {
-            $response = response()->json([
-                'message' => 'invalid'
-            ]);
-        }
-
-        return $response;
-    }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update($id, Request $request)
     {
-        if (Auth::guard('sanctum')->user()) {
-            $data['name'] = $request['name'];
-            $data['display_name'] = $request['display_name'];
-            $data['description'] = $request['description'];
-            Role::find($id)->update($data);
-            $rol = Role::find($id);
-            return response()->json([
-                'message' => 'Rol actualizado',
-            ]);
-        } else {
-            $response = response()->json([
-                'message' => 'Unauthorized'
-            ], 401);
-        }
+        $request->validate([
+            'name' => 'except'
+        ]);
 
-        return $response;
+        $rol = Role::findOrFail($id);
+
+        // guardar producto
+        $rol->update($request->all());
+        return response()->json([
+            'message' => 'Rol actualizado'
+        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(int $id)
     {
         try {
             $rol = Role::find($id)->delete();

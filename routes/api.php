@@ -3,8 +3,10 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RegisterController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\BanksController;
 use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\RolesController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,15 +22,17 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::apiResource('banks', BanksController::class);
+
     Route::post('getDatosToken', [AuthController::class, 'getDatosToken']);
     Route::post('validarToken', [AuthController::class, 'validarToken']);
     Route::post('logout', [AuthController::class, 'logout']);
     // Roles
-    Route::post('roles', [RolesController::class, 'index']);
-    Route::post('roles/create', [RolesController::class, 'store']);
-    Route::post('roles/update/{id}', [RolesController::class, 'update']);
-    Route::post('roles/delete/{id}', [RolesController::class, 'destroy']);
-    Route::post('roles/asignar/{rol}/user/{user}', [RolesController::class, 'asignar']);
+    Route::get('roles', [RolesController::class, 'index'])->name('roles.index');
+    Route::post('roles', [RolesController::class, 'store'])->name('roles.store');
+    Route::put('roles/{rol}', [RolesController::class, 'update'])->name('roles.update');
+    Route::delete('roles/{rol}', [RolesController::class, 'destroy'])->name('roles.destroy');
+    //  Route::post('roles/asignar', [RolesController::class, 'asignar']);
 
     // Permissions
     Route::post('permissions', [PermissionsController::class, 'index']);
@@ -45,3 +49,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('services/delete/{id}', [ServiceController::class, 'destroy']);
 });
 Route::post('login', [AuthController::class, 'login']);
+Route::post('webhook', WebhookController::class);

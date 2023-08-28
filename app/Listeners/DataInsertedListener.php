@@ -21,6 +21,7 @@ class DataInsertedListener
      */
     public function handle(DataEvent $event): void
     {
+        printf('evento');
         printf($event->permiso);
     }
 }

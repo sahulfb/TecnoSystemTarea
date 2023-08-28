@@ -58,6 +58,14 @@ class AuthController extends Controller
 
     public function validarToken()
     {
+        //Carlos
+        $valid = Auth::guard('sanctum')->user();
+        $status = !!$valid ? 200 : 401;
+
+        return response()->json(['valid' => $valid], $status);
+
+
+
         if (Auth::guard('sanctum')->user()) {
             return response()->json([
                 'valid' => true
@@ -71,9 +79,12 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        if (Auth::guard('sanctum')->user()) {
-            //eliminar el token actual
-            $request->user()->currentAccessToken()->delete();
-        }
+        //eliminar el token actual
+        $request->user()->currentAccessToken()->delete();
+
+        $param1 = null;
+        $param2 = 204;
+
+        return response()->json($param1, $param2);
     }
 }

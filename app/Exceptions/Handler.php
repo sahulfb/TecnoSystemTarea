@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -11,7 +12,12 @@ use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Session\TokenMismatchException;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -27,12 +33,18 @@ class Handler extends ExceptionHandler
     ];
 
     protected $exceptionStatusMap = [
+        TokenMismatchException::class => Response::HTTP_UNAUTHORIZED, //401
+        AuthenticationException::class => Response::HTTP_UNAUTHORIZED, //401
+        AuthorizationException::class => Response::HTTP_FORBIDDEN, //403
+        AccessDeniedHttpException::class => Response::HTTP_FORBIDDEN, //403
+        UnauthorizedHttpException::class => Response::HTTP_UNAUTHORIZED, //401
         NotFoundHttpException::class => Response::HTTP_NOT_FOUND, //404
         ModelNotFoundException::class => Response::HTTP_NOT_FOUND, //404
         MethodNotAllowedHttpException::class => Response::HTTP_METHOD_NOT_ALLOWED, //405
-        UnauthorizedHttpException::class => Response::HTTP_UNAUTHORIZED, //401
-        AuthenticationException::class => Response::HTTP_UNAUTHORIZED, //401
-        ValidationException::class => Response::HTTP_UNPROCESSABLE_ENTITY //422
+        ValidationException::class => Response::HTTP_UNPROCESSABLE_ENTITY, //422
+        HttpException::class => Response::HTTP_INTERNAL_SERVER_ERROR, //500
+        HttpResponseException::class => Response::HTTP_INTERNAL_SERVER_ERROR, //500
+        QueryException::class => Response::HTTP_INTERNAL_SERVER_ERROR //500
     ];
 
     /**
@@ -49,13 +61,14 @@ class Handler extends ExceptionHandler
     {
         $statusCode = $this->getStatusCode($exception);
         $responseData = [
-            'errors' => $exception->getMessage(),
+            'errors' => $statusCode === 422 ? $exception->errors() : [],
             'exception' => get_class($exception),
             'file' => $exception->getFile(),
             'line' => $exception->getLine(),
+            'message' => $exception->getMessage(),
             'statusCode' => $statusCode,
         ];
-        return new JsonResponse($responseData, $statusCode);
+        return response()->json($responseData, $statusCode);
     }
 
     protected function getStatusCode(Throwable $exception): int
@@ -65,6 +78,6 @@ class Handler extends ExceptionHandler
                 return $statusCode;
             }
         }
-        return Response::HTTP_INTERNAL_SERVER_ERROR;
+        return 501;
     }
 }
